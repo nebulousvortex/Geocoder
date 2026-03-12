@@ -1,14 +1,21 @@
 package ru.vortex.geocoder.service;
 
+import org.apache.poi.ss.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import ru.vortex.geocoder.model.Location;
 import ru.vortex.geocoder.model.Status;
 import ru.vortex.geocoder.repository.LocationRepository;
 import ru.vortex.geocoder.repository.StatusRepository;
+import java.io.ByteArrayInputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -127,5 +134,82 @@ public class LocationService {
 
     public void deleteById(Long id) {
         repository.deleteById(id);
+    }
+
+    @Async
+    @Transactional
+    public void importAddresses(byte[] fileBytes, String originalFilename) {
+        List<String> addresses = extractAddresses(fileBytes, originalFilename);
+        for (String address : addresses) {
+            if (!address.isEmpty()) {
+                Location location = new Location();
+                location.setAddress(address);
+                save(location);
+            }
+        }
+    }
+
+    private List<String> extractAddresses(byte[] fileBytes, String filename) {
+        List<String> addresses = new ArrayList<>();
+        String lower = filename.toLowerCase();
+        try (InputStream is = new ByteArrayInputStream(fileBytes)) {
+            if (lower.endsWith(".csv")) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+                    String line;
+                    int addressIndex = -1;
+                    boolean firstLine = true;
+                    while ((line = br.readLine()) != null) {
+                        if (line.trim().isEmpty()) continue;
+                        String[] parts = line.split(";", -1);
+                        if (firstLine) {
+                            for (int i = 0; i < parts.length; i++) {
+                                if (parts[i].trim().equalsIgnoreCase("Адрес")) {
+                                    addressIndex = i;
+                                    break;
+                                }
+                            }
+                            firstLine = false;
+                            continue;
+                        }
+                        if (addressIndex != -1 && parts.length > addressIndex) {
+                            String val = parts[addressIndex].trim().replace("\"", "");
+                            if (!val.isEmpty()) addresses.add(val);
+                        }
+                    }
+                }
+            } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+                Workbook workbook = WorkbookFactory.create(is);
+                Sheet sheet = workbook.getSheetAt(0);
+                Row headerRow = sheet.getRow(0);
+                int colIndex = -1;
+                if (headerRow != null) {
+                    for (int c = 0; c < headerRow.getLastCellNum(); c++) {
+                        Cell cell = headerRow.getCell(c);
+                        if (cell != null && cell.getStringCellValue().trim().equalsIgnoreCase("Адрес")) {
+                            colIndex = c;
+                            break;
+                        }
+                    }
+                }
+                for (int r = 1; r <= sheet.getLastRowNum(); r++) {
+                    Row row = sheet.getRow(r);
+                    if (row == null) continue;
+                    Cell cell = row.getCell(colIndex);
+                    if (cell != null) {
+                        String val = "";
+                        switch (cell.getCellType()) {
+                            case STRING -> val = cell.getStringCellValue();
+                            case NUMERIC -> val = String.valueOf((long) cell.getNumericCellValue());
+                            default -> val = "";
+                        }
+                        val = val.trim();
+                        if (!val.isEmpty()) addresses.add(val);
+                    }
+                }
+                workbook.close();
+            }
+        } catch (Exception e) {
+        }
+        return addresses;
     }
 }
