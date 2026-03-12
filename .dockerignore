@@ -1,0 +1,32 @@
+# --- Git ---
+.git
+.gitignore
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# --- Build Artifacts ---
+target/
+build/
+out/
+
+# --- Logs and Temp ---
+*.log
+logs/
+tmp/
+
+# --- Secrets ---
+.env
+*.env
+
+# --- Docker Compose ---
+docker-compose*.yml
+docker-compose*.yaml
+
+# --- Documentation ---
+*.md
+README*
+LICENSE
