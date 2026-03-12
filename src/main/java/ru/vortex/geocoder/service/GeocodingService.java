@@ -28,7 +28,7 @@ public class GeocodingService {
         this.objectMapper = objectMapper;
     }
 
-    public record GeoResult(double latitude, double longitude, String displayName) {}
+    public record GeoResult(double latitude, double longitude, String displayName, String country, String city) {}
 
     public Optional<GeoResult> geocode(String address) {
         try {
@@ -46,12 +46,17 @@ public class GeocodingService {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 JsonNode root = objectMapper.readTree(response.getBody());
-                if (root.isArray() && root.size() > 0) {
+                if (root.isArray() && !root.isEmpty()) {
                     JsonNode first = root.get(0);
                     double lat = first.get("lat").asDouble();
                     double lon = first.get("lon").asDouble();
                     String displayName = first.get("display_name").asText();
-                    return Optional.of(new GeoResult(lat, lon, displayName));
+
+                    JsonNode addressNode = first.get("address");
+                    String country = (addressNode != null && addressNode.has("country")) ? addressNode.get("country").asText() : "";
+                    String city = (addressNode != null && addressNode.has("city")) ? addressNode.get("city").asText() : "";
+
+                    return Optional.of(new GeoResult(lat, lon, displayName, country, city));
                 } else {
                     log.warn("No results found for address: {}", address);
                     return Optional.empty();
@@ -70,16 +75,18 @@ public class GeocodingService {
         if (address == null) {
             return "";
         }
+
         String result = address.trim();
-
+        result = result.replaceAll("/\\S*", "");
         result = result.replaceAll("(?i)\\s*(дом|д\\.|д\\s+)", " ");
-        result = result.replaceAll("(?i)\\s*(корпус|к\\.|к\\s+)([0-9]+)", " к$2");
-        result = result.replaceAll("(?i)\\s*(строение|стр\\.|с\\.|с\\s+)([0-9]+)", " с$2");
-        result = result.replaceAll("(?i)\\s*(квартира|кв\\.|литер|лит\\.)\\s*[0-9]*", "");
-
-        result = result.replaceAll("[,.;]", " ");
+        result = result.replaceAll("(?i)\\s*(корпус|к\\.|к\\s+)([\\d\\w]+)", " к$2");
+        result = result.replaceAll("(?i)\\s*(строение|стр\\.?|стр\\s+|с\\.?|с\\s+)\\s*([\\d\\w]+)", " с$2");
+        result = result.replaceAll("(?i)\\s*(литера|лит\\.|литера\\s+)([А-Яа-яA-Za-z\\d]+)", " лит.$2");
+        result = result.replaceAll("(?i)\\s*(квартира|кв\\.|кв\\s+)[\\d\\w-]*", "");
+        result = result.replaceAll("[,;]", " ");
         result = result.replaceAll("\\s+", " ");
         result = result.replaceAll("(\\d)\\s+([кс])", "$1$2");
+        result = result.replaceAll("([кс])\\s+(\\d)", "$1$2");
 
         return result.trim();
     }
