@@ -1,5 +1,8 @@
 package ru.vortex.geocoder.controller;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +21,21 @@ public class LocationController {
 
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("locations", service.findAll());
+        return "redirect:/locations?page=0&size=20";
+    }
+
+    @GetMapping(params = "page")
+    public String list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Model model
+    ) {
+        if (page < 0) {
+            page = 0;
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Location> locationsPage = service.findAll(pageable);
+        model.addAttribute("locationsPage", locationsPage);
         return "locations";
     }
 
@@ -50,6 +67,12 @@ public class LocationController {
             }
         } catch (Exception e) {
         }
+        return "redirect:/locations";
+    }
+
+    @PostMapping("/update/{id}")
+    public String update(@PathVariable Long id, @ModelAttribute Location location) {
+        service.update(id, location);
         return "redirect:/locations";
     }
 }

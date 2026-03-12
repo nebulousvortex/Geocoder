@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,7 +22,7 @@
 <h1>Локации</h1>
 
 <button type="button" class="btn btn-primary mb-3 me-2" data-bs-toggle="modal" data-bs-target="#addModal">Добавить вручную</button>
-<button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#importModal">Импорт из файла (Excel/CSV)</button>
+<button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#importModal">Импорт из файла</button>
 
 <table>
     <thead>
@@ -38,7 +38,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="location : ${locations}">
+    <tr th:each="location : ${locationsPage.content}">
         <td th:text="${location.id}"></td>
         <td th:text="${location.address}"></td>
         <td class="aliases" th:text="${location.aliases != null ? location.aliases : '-'}"></td>
@@ -59,6 +59,32 @@
     </tr>
     </tbody>
 </table>
+
+<p class="text-center mb-3">
+    Всего локаций: <span th:text="${locationsPage.totalElements}"></span>
+    (Страница <span th:text="${locationsPage.number + 1}"></span> из <span th:text="${locationsPage.totalPages}"></span>)
+</p>
+
+<nav aria-label="Пагинация локаций">
+    <ul class="pagination justify-content-center">
+        <li th:class="${locationsPage.first ? 'page-item disabled' : 'page-item'}">
+            <a th:if="${!locationsPage.first}" class="page-link" th:href="@{/locations(page=${locationsPage.number - 1}, size=${locationsPage.size})}">Пред.</a>
+            <span th:if="${locationsPage.first}" class="page-link">Пред.</span>
+        </li>
+
+        <th:block th:each="p : ${#numbers.sequence(0, locationsPage.totalPages - 1)}">
+            <li th:class="${p == locationsPage.number ? 'page-item active' : 'page-item'}">
+                <a class="page-link" th:href="@{/locations(page=${p}, size=${locationsPage.size})}" th:text="${p + 1}"></a>
+            </li>
+        </th:block>
+
+        <li th:class="${locationsPage.last ? 'page-item disabled' : 'page-item'}">
+            <a th:if="${!locationsPage.last}" class="page-link" th:href="@{/locations(page=${locationsPage.number + 1}, size=${locationsPage.size})}">След.</a>
+            <span th:if="${locationsPage.last}" class="page-link">След.</span>
+        </li>
+    </ul>
+</nav>
+
 <p><a href="/">На главную</a></p>
 
 <div class="modal fade" id="addModal" tabindex="-1">

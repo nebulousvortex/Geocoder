@@ -3,10 +3,11 @@ package ru.vortex.geocoder.service;
 import org.apache.poi.ss.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import ru.vortex.geocoder.model.Location;
 import ru.vortex.geocoder.model.Status;
 import ru.vortex.geocoder.repository.LocationRepository;
@@ -41,6 +42,10 @@ public class LocationService {
         return repository.findAll();
     }
 
+    public Page<Location> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
+    }
+
     @Transactional
     public Location save(Location location) {
         Optional<Location> existingByAddress = repository.findByAddress(location.getAddress());
@@ -50,7 +55,7 @@ public class LocationService {
         }
 
         Status pendingStatus = statusRepository.findByName("В процессе")
-                .orElseGet(() -> createDefaultStatuses().get(0));
+                .orElseGet(() -> createDefaultStatuses().getFirst());
         location.setStatus(pendingStatus);
 
         repository.save(location);
@@ -160,7 +165,7 @@ public class LocationService {
                     boolean firstLine = true;
                     while ((line = br.readLine()) != null) {
                         if (line.trim().isEmpty()) continue;
-                        String[] parts = line.split(";", -1);
+                        String[] parts = line.split(",", -1);
                         if (firstLine) {
                             for (int i = 0; i < parts.length; i++) {
                                 if (parts[i].trim().equalsIgnoreCase("Адрес")) {
@@ -208,8 +213,27 @@ public class LocationService {
                 }
                 workbook.close();
             }
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         return addresses;
+    }
+
+    @Transactional
+    public void update(Long id, Location updatedLocation) {
+        Optional<Location> optional = repository.findById(id);
+        if (optional.isPresent()) {
+            Location location = optional.get();
+            boolean addressChanged = updatedLocation.getAddress() != null && !updatedLocation.getAddress().equals(location.getAddress());
+            if (addressChanged) {
+                location.setAddress(updatedLocation.getAddress());
+                location.setLatitude(null);
+                location.setLongitude(null);
+                Status pendingStatus = statusRepository.findByName("В процессе")
+                        .orElseGet(() -> createDefaultStatuses().getFirst());
+                location.setStatus(pendingStatus);
+                repository.save(location);
+                geocodeAsync(id);
+            }
+        }
     }
 }
