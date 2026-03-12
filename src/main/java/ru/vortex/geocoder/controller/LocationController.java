@@ -21,13 +21,13 @@ public class LocationController {
 
     @GetMapping
     public String list(Model model) {
-        return "redirect:/locations?page=0&size=20";
+        return "redirect:/locations?page=0&size=7";
     }
 
     @GetMapping(params = "page")
     public String list(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "7") int size,
             Model model
     ) {
         if (page < 0) {
