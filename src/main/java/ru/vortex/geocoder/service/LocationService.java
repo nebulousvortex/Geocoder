@@ -94,6 +94,9 @@ public class LocationService {
 
                 location.setLatitude(result.get().latitude());
                 location.setLongitude(result.get().longitude());
+                location.setNormalizedAddress(result.get().displayName());
+                location.setCountry(result.get().country());
+                location.setCity(result.get().city());
                 location.setStatus(readyStatus != null ? readyStatus : location.getStatus());
             } else {
                 location.setStatus(errorStatus != null ? errorStatus : location.getStatus());
@@ -228,6 +231,9 @@ public class LocationService {
                 location.setAddress(updatedLocation.getAddress());
                 location.setLatitude(null);
                 location.setLongitude(null);
+                location.setNormalizedAddress(null);
+                location.setCountry(null);
+                location.setCity(null);
                 Status pendingStatus = statusRepository.findByName("В процессе")
                         .orElseGet(() -> createDefaultStatuses().getFirst());
                 location.setStatus(pendingStatus);

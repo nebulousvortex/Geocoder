@@ -22,6 +22,15 @@ public class Location {
     @Column(nullable = true, length = 2000)
     private String aliases;
 
+    @Column(nullable = true, length = 2000)
+    private String normalizedAddress;
+
+    @Column(nullable = true, length = 100)
+    private String country;
+
+    @Column(nullable = true, length = 100)
+    private String city;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
@@ -46,6 +55,12 @@ public class Location {
     public void setLongitude(Double longitude) { this.longitude = longitude; }
     public String getAliases() { return aliases; }
     public void setAliases(String aliases) { this.aliases = aliases; }
+    public String getNormalizedAddress() { return normalizedAddress; }
+    public void setNormalizedAddress(String normalizedAddress) { this.normalizedAddress = normalizedAddress; }
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
