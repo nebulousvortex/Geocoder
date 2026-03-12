@@ -72,15 +72,14 @@ public class GeocodingService {
         }
         String result = address.trim();
 
-        result = result.replaceAll("(?i)\\bкорпус\\b", "к.");
-        result = result.replaceAll("(?i)\\bдом\\b", "д.");
-        result = result.replaceAll("(?i)\\bд\\.\\s+", "д.");
-        result = result.replaceAll("(?i)\\bстроение\\b", "стр.");
-        result = result.replaceAll("(?i)\\bлитер\\b", "лит.");
-        result = result.replaceAll("(?i)\\bквартира\\b", "кв.");
-        result = result.replaceAll("(?i)\\bкв\\.\\s+", "кв.");
+        result = result.replaceAll("(?i)\\s*(дом|д\\.|д\\s+)", " ");
+        result = result.replaceAll("(?i)\\s*(корпус|к\\.|к\\s+)([0-9]+)", " к$2");
+        result = result.replaceAll("(?i)\\s*(строение|стр\\.|с\\.|с\\s+)([0-9]+)", " с$2");
+        result = result.replaceAll("(?i)\\s*(квартира|кв\\.|литер|лит\\.)\\s*[0-9]*", "");
 
+        result = result.replaceAll("[,.;]", " ");
         result = result.replaceAll("\\s+", " ");
+        result = result.replaceAll("(\\d)\\s+([кс])", "$1$2");
 
         return result.trim();
     }
