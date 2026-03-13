@@ -2,6 +2,7 @@ package ru.vortex.geocoder.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,14 +24,14 @@ public class AuthController {
 
     @Operation(summary = "Регистрация нового пользователя")
     @PostMapping("/register")
-    public ResponseEntity<AuthResponseDto> register(@RequestBody RegisterRequestDto request) {
+    public ResponseEntity<AuthResponseDto> register(@RequestBody @Valid RegisterRequestDto request) {
         String token = authService.register(request);
         return ResponseEntity.ok(new AuthResponseDto(token));
     }
 
     @Operation(summary = "Вход в систему")
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginRequestDto request) {
+    public ResponseEntity<AuthResponseDto> login(@RequestBody @Valid LoginRequestDto request) {
         String token = authService.login(request.getUsername(), request.getPassword());
         return ResponseEntity.ok(new AuthResponseDto(token));
     }
