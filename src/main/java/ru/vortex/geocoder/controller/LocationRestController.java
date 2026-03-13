@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.vortex.geocoder.dto.LocationDto;
 import ru.vortex.geocoder.service.LocationService;
 
@@ -54,26 +55,23 @@ public class LocationRestController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Импорт файла (только ADMIN)")
+    @Operation(summary = "Импорт файла с прогрессом (только ADMIN)")
     @PostMapping("/import")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> importFile(@RequestParam("file") MultipartFile file) {
+    public SseEmitter importFile(@RequestParam("file") MultipartFile file) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         try {
             if (!file.isEmpty()) {
                 byte[] bytes = file.getBytes();
                 String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "";
-                service.importAddresses(bytes, filename);
-                Map<String, String> response = new HashMap<>();
-                response.put("message", "Импорт запущен асинхронно.");
-                return ResponseEntity.ok(response);
+                service.importAddresses(bytes, filename, emitter);
+                return emitter;
             }
-            Map<String, String> response = new HashMap<>();
-            response.put("error", "Файл пустой");
-            return ResponseEntity.badRequest().body(response);
+            emitter.completeWithError(new RuntimeException("Файл пустой"));
+            return emitter;
         } catch (Exception e) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", "Ошибка импорта: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            emitter.completeWithError(e);
+            return emitter;
         }
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.vortex.geocoder.dto.LocationDto;
 import ru.vortex.geocoder.model.Location;
 import ru.vortex.geocoder.model.Status;
@@ -18,7 +19,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -147,15 +150,34 @@ public class LocationService {
 
     @Async
     @Transactional
-    public void importAddresses(byte[] fileBytes, String originalFilename) {
+    public void importAddresses(byte[] fileBytes, String originalFilename, SseEmitter emitter) {
         List<String> addresses = extractAddresses(fileBytes, originalFilename);
+        int total = addresses.size();
+        int processed = 0;
+
         for (String address : addresses) {
             if (!address.isEmpty()) {
                 Location location = new Location();
                 location.setAddress(address);
                 save(location);
+                processed++;
+
+                try {
+                    Map<String, Object> progress = new HashMap<>();
+                    progress.put("processed", processed);
+                    progress.put("total", total);
+                    progress.put("percent", (int) ((processed * 100.0) / total));
+                    emitter.send(SseEmitter.event().name("progress").data(progress));
+                } catch (Exception ignored) {
+                }
             }
         }
+
+        try {
+            emitter.send(SseEmitter.event().name("complete").data("Импорт завершён"));
+        } catch (Exception ignored) {
+        }
+        emitter.complete();
     }
 
     private List<String> extractAddresses(byte[] fileBytes, String filename) {
