@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.vortex.geocoder.dto.LocationDto;
 import ru.vortex.geocoder.model.Location;
 import ru.vortex.geocoder.model.Status;
 import ru.vortex.geocoder.repository.LocationRepository;
@@ -241,5 +242,35 @@ public class LocationService {
                 geocodeAsync(id);
             }
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LocationDto> findAllDto(Pageable pageable) {
+        return repository.findAll(pageable).map(this::toDto);
+    }
+
+    private LocationDto toDto(Location location) {
+        LocationDto dto = new LocationDto();
+        dto.setId(location.getId());
+        dto.setAddress(location.getAddress());
+        dto.setLatitude(location.getLatitude());
+        dto.setLongitude(location.getLongitude());
+        dto.setAliases(location.getAliases());
+        dto.setNormalizedAddress(location.getNormalizedAddress());
+        dto.setCountry(location.getCountry());
+        dto.setCity(location.getCity());
+        if (location.getStatus() != null) {
+            dto.setStatusName(location.getStatus().getName());
+            dto.setStatusColor(location.getStatus().getColor());
+        }
+        dto.setCreatedAt(location.getCreatedAt());
+        return dto;
+    }
+
+    public LocationDto createLocation(String address) {
+        Location location = new Location();
+        location.setAddress(address);
+        Location saved = save(location);
+        return toDto(saved);
     }
 }

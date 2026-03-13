@@ -1,49 +1,19 @@
-package ru.vortex.geocoder.model;
+package ru.vortex.geocoder.dto;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "locations")
-public class Location {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class LocationDto {
     private Long id;
-
-    @Column(nullable = false, unique = true, length = 500)
     private String address;
-
-    @Column(nullable = true)
     private Double latitude;
-
-    @Column(nullable = true)
     private Double longitude;
-
-    @Column(nullable = true, length = 2000)
     private String aliases;
-
-    @Column(nullable = true, length = 2000)
     private String normalizedAddress;
-
-    @Column(nullable = true, length = 100)
     private String country;
-
-    @Column(nullable = true, length = 100)
     private String city;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "status_id", nullable = false)
-    private Status status;
-
-    @Column(nullable = false)
+    private String statusName;
+    private String statusColor;
     private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -61,8 +31,10 @@ public class Location {
     public void setCountry(String country) { this.country = country; }
     public String getCity() { return city; }
     public void setCity(String city) { this.city = city; }
-    public Status getStatus() { return status; }
-    public void setStatus(Status status) { this.status = status; }
+    public String getStatusName() { return statusName; }
+    public void setStatusName(String statusName) { this.statusName = statusName; }
+    public String getStatusColor() { return statusColor; }
+    public void setStatusColor(String statusColor) { this.statusColor = statusColor; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
