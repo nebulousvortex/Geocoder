@@ -27,6 +27,8 @@ services:
       - "8080:8080"
     environment:
       GEOCODE_API_KEY: ${GEOCODE_API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${DB_USER}

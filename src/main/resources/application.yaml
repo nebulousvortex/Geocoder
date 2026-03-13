@@ -23,3 +23,7 @@ server:
 geocode:
   api:
     key: ${GEOCODE_API_KEY}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
