@@ -1,6 +1,7 @@
 package ru.vortex.geocoder.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +21,8 @@ public class RouteRestController {
         this.routeService = routeService;
     }
 
-    @Operation(summary = "Построить маршрут (USER + ADMIN)")
+    @Operation(summary = "Построить маршрут (USER + ADMIN)",
+            security = { @SecurityRequirement(name = "bearer-key") })
     @PostMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<RouteResponseDto> buildRoute(@RequestBody RouteRequestDto request) {
