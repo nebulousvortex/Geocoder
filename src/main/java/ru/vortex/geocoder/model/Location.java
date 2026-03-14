@@ -1,6 +1,7 @@
 package ru.vortex.geocoder.model;
 
 import jakarta.persistence.*;
+import ru.vortex.geocoder.annotation.Filterable;
 import java.time.LocalDateTime;
 
 @Entity
@@ -10,6 +11,7 @@ public class Location {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Filterable
     @Column(nullable = false, unique = true, length = 500)
     private String address;
 
@@ -22,12 +24,15 @@ public class Location {
     @Column(nullable = true, length = 2000)
     private String aliases;
 
+    @Filterable
     @Column(nullable = true, length = 2000)
     private String normalizedAddress;
 
+    @Filterable
     @Column(nullable = true, length = 100)
     private String country;
 
+    @Filterable
     @Column(nullable = true, length = 100)
     private String city;
 
@@ -35,6 +40,7 @@ public class Location {
     @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
+    @Filterable
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

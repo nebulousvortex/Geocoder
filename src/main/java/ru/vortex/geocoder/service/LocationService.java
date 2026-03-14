@@ -5,29 +5,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import ru.vortex.geocoder.dto.LocationDto;
 import ru.vortex.geocoder.model.Location;
 import ru.vortex.geocoder.model.Status;
 import ru.vortex.geocoder.repository.LocationRepository;
 import ru.vortex.geocoder.repository.StatusRepository;
+
 import java.io.ByteArrayInputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.InputStream;
 import java.util.ArrayList;
-
 import java.util.List;
-
 import java.util.Optional;
 
 @Service
 public class LocationService {
     private static final Logger log = LoggerFactory.getLogger(LocationService.class);
-
     private final LocationRepository repository;
     private final GeocodingService geocodingService;
     private final StatusRepository statusRepository;
@@ -48,6 +46,16 @@ public class LocationService {
 
     public Page<Location> findAll(Pageable pageable) {
         return repository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LocationDto> findAllDto(Pageable pageable) {
+        return repository.findAll(pageable).map(this::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LocationDto> search(Specification<Location> spec, Pageable pageable) {
+        return repository.findAll(spec, pageable).map(this::toDto);
     }
 
     @Transactional
@@ -122,7 +130,7 @@ public class LocationService {
         if (existingAliases.isEmpty()) {
             existing.setAliases(normalizedNewAlias);
         } else {
-            existing.setAliases(existingAliases + ";" + normalizedNewAlias);
+            existing.setAliases(existingAliases + "; " + normalizedNewAlias);
         }
     }
 
@@ -152,32 +160,13 @@ public class LocationService {
     @Transactional
     public void importAddresses(byte[] fileBytes, String originalFilename) {
         List<String> addresses = extractAddresses(fileBytes, originalFilename);
-
-
-
         for (String address : addresses) {
             if (!address.isEmpty()) {
                 Location location = new Location();
                 location.setAddress(address);
                 save(location);
-
-
-
-
-
-
-
-
-
-
             }
         }
-
-
-
-
-
-
     }
 
     private List<String> extractAddresses(byte[] fileBytes, String filename) {
@@ -264,11 +253,6 @@ public class LocationService {
                 geocodeAsync(id);
             }
         }
-    }
-
-    @Transactional(readOnly = true)
-    public Page<LocationDto> findAllDto(Pageable pageable) {
-        return repository.findAll(pageable).map(this::toDto);
     }
 
     private LocationDto toDto(Location location) {
