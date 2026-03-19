@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 import ru.vortex.geocoder.dto.RouteRequestDto;
 import ru.vortex.geocoder.dto.RouteResponseDto;
 import ru.vortex.geocoder.model.Location;
@@ -20,12 +20,12 @@ public class RouteService {
     private static final Logger log = LoggerFactory.getLogger(RouteService.class);
 
     private final LocationRepository locationRepository;
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    public RouteService(LocationRepository locationRepository, RestTemplate restTemplate, ObjectMapper objectMapper) {
+    public RouteService(LocationRepository locationRepository, ObjectMapper objectMapper) {
         this.locationRepository = locationRepository;
-        this.restTemplate = restTemplate;
+        this.restClient = RestClient.create();
         this.objectMapper = objectMapper;
     }
 
@@ -66,7 +66,11 @@ public class RouteService {
                 "?overview=full&geometries=geojson&steps=true&alternatives=false";
 
         try {
-            String responseBody = restTemplate.getForObject(url, String.class);
+            String responseBody = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(String.class);
+
             JsonNode root = objectMapper.readTree(responseBody);
 
             if (!"Ok".equals(root.path("code").asText())) {

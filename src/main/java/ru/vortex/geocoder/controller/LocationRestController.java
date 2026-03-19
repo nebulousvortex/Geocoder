@@ -21,6 +21,7 @@ import ru.vortex.geocoder.util.GenericSpecificationBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -65,6 +66,29 @@ public class LocationRestController {
     public ResponseEntity<LocationDto> create(@RequestBody LocationDto request) {
         LocationDto created = service.createLocation(request.getAddress());
         return ResponseEntity.ok(created);
+    }
+
+    @Operation(summary = "Получить локацию по ID (USER + ADMIN)",
+            security = { @SecurityRequirement(name = "bearer-key") })
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<LocationDto> getById(@PathVariable Long id) {
+        Page<LocationDto> all = service.findAllDto(PageRequest.of(0, 1000));
+        Optional<LocationDto> found = all.getContent().stream().filter(dto -> dto.getId().equals(id)).findFirst();
+        return found.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(summary = "Обновить адрес локации (только ADMIN)",
+            security = { @SecurityRequirement(name = "bearer-key") })
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<LocationDto> update(@PathVariable Long id, @RequestBody LocationDto request) {
+        Location updated = new Location();
+        updated.setAddress(request.getAddress());
+        service.update(id, updated);
+        Page<LocationDto> all = service.findAllDto(PageRequest.of(0, 1000));
+        Optional<LocationDto> found = all.getContent().stream().filter(dto -> dto.getId().equals(id)).findFirst();
+        return found.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @Operation(summary = "Удалить локацию (только ADMIN)",

@@ -5,26 +5,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 import java.util.Optional;
 
 @Service
 public class GeocodingService {
     private static final Logger log = LoggerFactory.getLogger(GeocodingService.class);
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
     @Value("${geocode.api.key}")
     private String apiKey;
 
-    public GeocodingService(RestTemplate restTemplate, ObjectMapper objectMapper) {
-        this.restTemplate = restTemplate;
+    public GeocodingService(ObjectMapper objectMapper) {
+        this.restClient = RestClient.create();
         this.objectMapper = objectMapper;
     }
 
@@ -37,32 +33,25 @@ public class GeocodingService {
 
             log.info("Geocoding request for address: {}", address);
 
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    new HttpEntity<>(new HttpHeaders()),
-                    String.class
-            );
+            String responseBody = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(String.class);
 
-            if (response.getStatusCode().is2xxSuccessful()) {
-                JsonNode root = objectMapper.readTree(response.getBody());
-                if (root.isArray() && !root.isEmpty()) {
-                    JsonNode first = root.get(0);
-                    double lat = first.get("lat").asDouble();
-                    double lon = first.get("lon").asDouble();
-                    String displayName = first.get("display_name").asText();
+            JsonNode root = objectMapper.readTree(responseBody);
+            if (root.isArray() && !root.isEmpty()) {
+                JsonNode first = root.get(0);
+                double lat = first.get("lat").asDouble();
+                double lon = first.get("lon").asDouble();
+                String displayName = first.get("display_name").asText();
 
-                    JsonNode addressNode = first.get("address");
-                    String country = (addressNode != null && addressNode.has("country")) ? addressNode.get("country").asText() : "";
-                    String city = (addressNode != null && addressNode.has("city")) ? addressNode.get("city").asText() : "";
+                JsonNode addressNode = first.get("address");
+                String country = (addressNode != null && addressNode.has("country")) ? addressNode.get("country").asText() : "";
+                String city = (addressNode != null && addressNode.has("city")) ? addressNode.get("city").asText() : "";
 
-                    return Optional.of(new GeoResult(lat, lon, displayName, country, city));
-                } else {
-                    log.warn("No results found for address: {}", address);
-                    return Optional.empty();
-                }
+                return Optional.of(new GeoResult(lat, lon, displayName, country, city));
             } else {
-                log.error("Geocoding request failed with status: {}", response.getStatusCode());
+                log.warn("No results found for address: {}", address);
                 return Optional.empty();
             }
         } catch (Exception e) {
