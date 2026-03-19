@@ -6,6 +6,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.vortex.geocoder.dto.AuthResponseDto;
 import ru.vortex.geocoder.dto.RegisterRequestDto;
 import ru.vortex.geocoder.model.User;
 import ru.vortex.geocoder.repository.UserRepository;
@@ -29,7 +30,7 @@ public class AuthService implements UserDetailsService {
     }
 
     @Transactional
-    public String register(RegisterRequestDto request) {
+    public AuthResponseDto register(RegisterRequestDto request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Пользователь уже существует");
         }
@@ -44,14 +45,29 @@ public class AuthService implements UserDetailsService {
         }
 
         userRepository.save(user);
-        return jwtService.generateToken(user);
+        return generateTokens(user);
     }
 
-    public String login(String username, String password) {
+    public AuthResponseDto login(String username, String password) {
         User user = (User) loadUserByUsername(username);
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("Неверный пароль");
         }
-        return jwtService.generateToken(user);
+        return generateTokens(user);
+    }
+
+    public AuthResponseDto refresh(String refreshToken) {
+        if (!jwtService.isRefreshTokenValid(refreshToken)) {
+            throw new RuntimeException("Невалидный refresh token");
+        }
+        String username = jwtService.extractUsername(refreshToken);
+        User user = (User) loadUserByUsername(username);
+        return generateTokens(user);
+    }
+
+    private AuthResponseDto generateTokens(User user) {
+        String access = jwtService.generateAccessToken(user);
+        String refresh = jwtService.generateRefreshToken(user);
+        return new AuthResponseDto(access, refresh);
     }
 }
