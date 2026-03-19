@@ -14,6 +14,6 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        locationService.createDefaultStatuses();
+        //locationService.createDefaultStatuses();
     }
 }
